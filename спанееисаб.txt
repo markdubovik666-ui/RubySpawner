@@ -12,31 +12,21 @@ local RunService       = game:GetService("RunService")
 local CoreGui          = game:GetService("CoreGui")
 local RS               = game:GetService("ReplicatedStorage")
 local LocalPlayer      = Players.LocalPlayer
-local BrainrotAssets   = nil
-pcall(function()
-    BrainrotAssets = require(RS.Shared.BrainrotAssets)
-end)
-
--- Different model path from the original King script: resolve through the
--- game's BrainrotAssets provider first, then use the replicated cache only
--- as a compatibility fallback.
+-- Avoid requiring Shared.BrainrotAssets: its nested require can fail in this context.
+-- Visual models are loaded from the replicated animal model cache instead.
 local function AcquireVisualAnimalModel(animalName)
-    local model = nil
-    if BrainrotAssets and type(BrainrotAssets.getModel) == "function" then
-        pcall(function()
-            local resolved = BrainrotAssets.getModel(animalName)
-            if resolved and resolved:IsA("Model") then
-                model = resolved:Clone()
-            end
-        end)
+    local models = RS:FindFirstChild("Models")
+    local animals = models and models:FindFirstChild("Animals")
+    local cached = animals and animals:FindFirstChild(animalName)
+    if not cached then
+        warn("[ruby.cc] Animal model not found: " .. tostring(animalName))
+        return nil
     end
-    if not model then
-        local cached = RS:FindFirstChild("Models")
-            and RS.Models:FindFirstChild("Animals")
-            and RS.Models.Animals:FindFirstChild(animalName)
-        if cached then model = cached:Clone() end
+    local ok, model = pcall(function() return cached:Clone() end)
+    if not ok then
+        warn("[ruby.cc] Model clone failed: " .. tostring(model))
+        return nil
     end
-    if model then model:SetAttribute("SunsetModelMethod", "BrainrotAssetsProvider") end
     return model
 end
 
@@ -11023,7 +11013,6 @@ task.spawn(function()
     end
 end)
 
-end
 
 --  SUNSET_DUPE_FAKE_BUTTONS
 --  2 скрытые кнопки — видны 3 сек, потом невидимы но кликабельны
@@ -11148,5 +11137,7 @@ task.defer(function()
     end)
 
 end)
+
+end -- close _buildAndRun
 
 _buildAndRun()
