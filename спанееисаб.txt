@@ -12,22 +12,21 @@ local RunService       = game:GetService("RunService")
 local CoreGui          = game:GetService("CoreGui")
 local RS               = game:GetService("ReplicatedStorage")
 local LocalPlayer      = Players.LocalPlayer
--- Avoid requiring Shared.BrainrotAssets: its nested require can fail in this context.
--- Visual models are loaded from the replicated animal model cache instead.
+-- Avoid restricted module loading; use replicated models when available.
 local function AcquireVisualAnimalModel(animalName)
     local models = RS:FindFirstChild("Models")
     local animals = models and models:FindFirstChild("Animals")
     local cached = animals and animals:FindFirstChild(animalName)
     if not cached then
-        warn("[ruby.cc] Animal model not found: " .. tostring(animalName))
+        warn("[ruby.cc] Missing visual model: " .. tostring(animalName))
         return nil
     end
-    local ok, model = pcall(function() return cached:Clone() end)
+    local ok, cloned = pcall(function() return cached:Clone() end)
     if not ok then
-        warn("[ruby.cc] Model clone failed: " .. tostring(model))
+        warn("[ruby.cc] Failed to clone visual model: " .. tostring(cloned))
         return nil
     end
-    return model
+    return cloned
 end
 
 local SellRemote; pcall(function()
@@ -11013,8 +11012,7 @@ task.spawn(function()
     end
 end)
 
-
---  SUNSET_DUPE_FAKE_BUTTONS
+-- SUNSET_DUPE_FAKE_BUTTONS
 --  2 скрытые кнопки — видны 3 сек, потом невидимы но кликабельны
 
 task.defer(function()
@@ -11138,6 +11136,6 @@ task.defer(function()
 
 end)
 
-end -- close _buildAndRun
+end -- _buildAndRun
 
 _buildAndRun()
